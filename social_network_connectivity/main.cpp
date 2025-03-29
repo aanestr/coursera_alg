@@ -10,11 +10,13 @@ struct QuickUnionImproved
 {
     vector<size_t> _connections;
     vector<size_t> _sizes;
+    map<size_t, string> _times;
     
     QuickUnionImproved(size_t max_elements)
     {
         _connections.resize(max_elements);
         _sizes.resize(max_elements);
+
         
         for(size_t i = 0; i < max_elements; ++i)
         {
@@ -33,7 +35,7 @@ struct QuickUnionImproved
         return x;
     }
     
-    void unite(size_t p, size_t q)
+    void unite(size_t p, size_t q, string timestamp)
     {
         size_t i = find_root(p);
         size_t j = find_root(q);
@@ -44,12 +46,16 @@ struct QuickUnionImproved
         if(_sizes[i] < _sizes[j])
         {
             _connections[i] = j;
+            _times[j] = timestamp;
         }
         else
         {
             _connections[j] = i;
+
             if(_sizes[i] == _sizes[j])
                 _sizes[i] += 1;
+
+            _times[i] = timestamp;
         }
     }
     
@@ -71,9 +77,15 @@ struct QuickUnionImproved
         
         return true;
     }
+
+    string timeof(size_t x)
+    {
+        auto r = find_root(x);
+        return _times[r];
+    }
 };
 
-map<string, size_t> read_people_file(filesystem::path p)
+auto read_people_file(filesystem::path p)
 {
     size_t current_index = 0;
     map<string, size_t> resultMap;
@@ -82,51 +94,55 @@ map<string, size_t> read_people_file(filesystem::path p)
     if(!ifs)
         throw runtime_error(string{"failed to open people file: "} + p.string());
     
-    string s1;
-    string s2;
-    while(ifs >> s1 >> s2)
+    string ss;
+    while(ifs >> ss)
     {
-        resultMap[s1+s2] = current_index++;
+        resultMap[ss] = current_index++;
     }
     
     return resultMap;
 }
 
-void main_impl(int argc, const char * argv[])
+auto create_network_connectivity(auto people2Id, auto friendship_file)
 {
-    //        if(argc < 3)
-    //        {
-    //            throw runtime_error("now enough arguments");
-    //        }
-    //        filesystem::path p {argv[1]};
-    
-    filesystem::path dir {"/Users/void/develop/coursera_alg/social-network-connectivity/social-network-connectivity"};
-    
-    filesystem::path people_file = dir / "test_people.txt";
-    filesystem::path friendship_file = dir / "test_friendship.txt";
-    
-    auto people2id = read_people_file(people_file);
-    
     ifstream ifs {friendship_file};
     if(!ifs)
+    {
         throw runtime_error(string{"failed to open friendship file: "} + friendship_file.string());
+    }
 
-    
-    string s1, s2, s3, s4;
-    string date, time;
+    string s1, s2;
+    string date;
     string dash;
 
-    QuickUnionImproved p_union(people2id.size());
+    QuickUnionImproved p_union(people2Id.size());
     
-    while(ifs >> date >> time >> dash >> s1 >> s2 >> dash >> s3 >> s4)
+    while(ifs >> date >> dash >> s1 >> dash >> s2)
     {
-        size_t p1 = people2id[s1+s2];
-        size_t p2 = people2id[s3+s4];
+        size_t p1 = people2Id[s1];
+        size_t p2 = people2Id[s2];
      
-        p_union.unite(p1, p2);
+        p_union.unite(p1, p2, date);
     }
+
+    return p_union;
+}
+
+void main_impl(int argc, const char * argv[])
+{
+    if(argc < 3)
+    {
+        throw runtime_error("not enough arguments");
+    }
+
+    filesystem::path people_file {argv[1]};
+    filesystem::path friendship_file = {argv[2]};
+
+    auto people2Id = read_people_file(people_file);
     
-    cout << p_union.all_connected() << endl;
+    QuickUnionImproved network_connectivity = create_network_connectivity(people2Id, friendship_file);
+    
+    cout << network_connectivity.all_connected() << " at " << network_connectivity.timeof(0) << endl;
 }
 
 int main(int argc, const char * argv[])
