@@ -170,7 +170,10 @@ struct Percolation
     // is the site (row, col) full?
     bool isFull(int row, int col)
     {
-        return !isOpen(row, col);
+        if(!isOpen(row, col))
+            return false;
+
+        return _qu.is_connected(calculate_index(row, col), 0);
     }
 
     // returns the number of open sites
@@ -188,35 +191,65 @@ struct Percolation
 void main_impl(int argc, const char * argv[])
 {
     uint N = 20;
-    uint T = 204;
+    uint T = 10;
 
     if(argc > 1)
         N = stoul(argv[1]);
     if(argc > 2)
         T = stoul(argv[2]);
 
-    if(T > N * N)
-        throw runtime_error("Incorrect input T > N * N");
+    double fractions_sum = 0;
+    vector<double> all_fractions;
+    all_fractions.reserve(T);
 
-
-    Percolation p(N);
-    
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_int_distribution<> dis(0, N - 1);
-
-    while(p.numberOfOpenSites() != T)
+    for (int i = 0; i < T; ++i)
     {
-        uint row = dis(gen);
-        uint col = dis(gen);
+        Percolation p(N);
+    
+        std::random_device rd;
+        std::mt19937 gen(rd());
+        std::uniform_int_distribution<> dis(0, N - 1);
+    
+        while(!p.percolates())
+        {
+            uint row = dis(gen);
+            uint col = dis(gen);
+            
+            if(!p.isOpen(row, col))
+                p.open(row, col);
+        }
         
-        if(!p.isOpen(row, col))
-            p.open(row, col);
-    }
-        
-    p.Print();
+        uint open_sites = p.numberOfOpenSites();
 
-    cout << p.percolates() << endl;
+        double fraction = (double)open_sites / (double)(N * N);
+    
+        fractions_sum += fraction;
+        all_fractions.push_back(fraction);
+    }
+
+    double x = (double)fractions_sum / (double)T;
+    
+
+
+    double ssum = 0.0;
+
+    for(auto fraction : all_fractions)
+    {
+        auto c = (fraction - x) * (fraction - x);
+        ssum += c;
+    }
+
+    double ss = ssum / (T - 1);
+    double s = sqrt(ss);
+    double t = sqrt(T);
+
+    double tmp = ((1.96 * s) / t);
+    double d1 = x - tmp;
+    double d2 = x + tmp;
+
+    cout << "mean   = " << x << endl;
+    cout << "stddev = " << sqrt(ss) << endl;
+    cout << "95% confidence interval = [" << d1 << ", " << d2 << "]" << endl;
 }
 
 int main(int argc, const char * argv[])
