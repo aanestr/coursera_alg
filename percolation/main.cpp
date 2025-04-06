@@ -87,6 +87,8 @@ struct Percolation
 {
     QuickUnionImproved _qu;
     vector<vector<uint>> _opened;
+    uint _opened_amount = 0;
+
     const uint _n;
 
     void Print()
@@ -121,6 +123,7 @@ struct Percolation
     void open(int row, int col)
     {
         _opened[row][col] = 1;
+        _opened_amount += 1;
 
         uint v1 = calculate_index(row, col);
 
@@ -173,16 +176,7 @@ struct Percolation
     // returns the number of open sites
     int numberOfOpenSites()
     {
-        uint amount = 0;
-        for(uint i = 0; i < _opened.size(); ++i)
-        {
-            for(uint j = 0; j < _opened[i].size(); ++j)
-            {
-                if(_opened[i][j] == 1)
-                    amount += 1;
-            }
-        }
-        return amount;
+       return _opened_amount;
     }
 
     bool percolates()
@@ -194,22 +188,30 @@ struct Percolation
 void main_impl(int argc, const char * argv[])
 {
     uint N = 20;
+    uint T = 204;
+
+    if(argc > 1)
+        N = stoul(argv[1]);
+    if(argc > 2)
+        T = stoul(argv[2]);
+
+    if(T > N * N)
+        throw runtime_error("Incorrect input T > N * N");
+
 
     Percolation p(N);
     
-    std::random_device rd;  // Obtain a seed from the hardware
-    std::mt19937 gen(rd()); // Initialize the random engine with the seed
-    std::uniform_int_distribution<> dis(0, 400);
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> dis(0, N - 1);
 
-    for(uint i = 0; i < N; ++i)
+    while(p.numberOfOpenSites() != T)
     {
-        for(uint j = 0; j < N; ++j)
-        {
-            int random_value = dis(gen);
-
-            if(random_value < 220)
-                p.open(i, j);
-        }
+        uint row = dis(gen);
+        uint col = dis(gen);
+        
+        if(!p.isOpen(row, col))
+            p.open(row, col);
     }
         
     p.Print();

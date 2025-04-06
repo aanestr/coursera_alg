@@ -18,12 +18,3 @@
 #include <fstream>
 
 #include <exception>
-
-
-#include <unistd.h>
-#include <limits.h>
-#include <stdint.h>
-
-
-
-using uint = std::uint32_t;
